@@ -17,7 +17,7 @@
 <div class="app">
 <aside class="sidebar"><div class="brand"><div class="brandmark">✦</div><b>Loan Assistant</b></div><nav class="nav"><button class="active"><span class="icon">▣</span><span>Applications</span></button><button onclick="focusDocs()"><span class="icon">◫</span><span>Documents</span></button><button onclick="runEligibilityFromNav()"><span class="icon">✓</span><span>Eligibility</span></button></nav><div class="side-note"><strong>DSA Workspace</strong>Demo environment<br>AI-assisted secured business lending</div></aside>
 <main class="main">
-<header class="topbar"><h1>Applications</h1><div class="online"><span class="dot"></span>System online</div></header>
+<header class="topbar"><h1>Applications</h1><div style="display:flex;align-items:center;gap:10px"><div class="online"><span class="dot"></span>System online</div><button class="secondary" id="signOut" style="padding:8px 10px">Sign out</button></div></header>
 <section class="content">
 <div class="hero"><div><h2>Good morning, DSA</h2><p>Build loan applications through a guided AI conversation.</p></div><button class="primary" id="newBtn">＋ New customer</button></div>
 <div class="layout">
@@ -34,6 +34,9 @@
 <script>
 const API=window.__HATCHABLE__.api;let selected=null,busy=false,docs=[];
 const $=id=>document.getElementById(id);
+const auth=window.hatchable?.auth;
+if(auth){auth.getSession().then(s=>{if(!s?.user)location.replace('/login?next=/')}).catch(()=>location.replace('/login?next=/'));}
+$('signOut').onclick=async()=>{try{await auth?.signOut()}finally{location.replace('/login')}};
 const money=n=>n?new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(n)):'—';
 const initials=n=>(n||'?').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}

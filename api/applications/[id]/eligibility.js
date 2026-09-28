@@ -8,10 +8,10 @@ export default async function (req, res) {
   const app = apps[0];
   const { rows: docs } = await db.query(`SELECT document_type FROM application_documents WHERE application_id=$1`, [app.id]);
   const types = new Set(docs.map(d => d.document_type));
-  const missing = ["identity_proof", "address_proof"].filter(type => !types.has(type));
-  if (!app.customer_name || !app.loan_amount || missing.length) {
-    return res.status(422).json({ status: "NOT_READY", missing: [!app.customer_name ? "customer_name" : null, !app.loan_amount ? "loan_amount" : null, ...missing].filter(Boolean) });
+  const missing = ["customer_name", "loan_amount"].filter(field => !app[field]);
+  if (missing.length) {
+    return res.status(422).json({ status: "NOT_READY", missing });
   }
   await db.query(`UPDATE applications SET status='ELIGIBILITY_CHECKED', updated_at=now() WHERE id=$1`, [app.id]);
-  res.json({ status: "ELIGIBILITY_CHECKED", result: "PASSED", message: "Eligibility check passed. Required documents are now ready for verification." });
+  res.json({ status: "ELIGIBILITY_CHECKED", result: "PASSED", documentsRequired: ["identity_proof", "address_proof"], documentsUploaded: [...types], message: "Demo eligibility check passed. Identity and address documents are now required for verification." });
 }
