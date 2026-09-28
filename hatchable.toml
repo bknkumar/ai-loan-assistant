@@ -7,3 +7,7 @@ required = true
 
 [project]
 name = "AI Loan Assistant"
+
+[db.tables.applications]
+read = "own"
+write = "own"
