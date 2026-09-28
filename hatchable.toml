@@ -1,6 +1,7 @@
 [auth]
 enabled = true
 providers = ["email"]
+signup = "invite"
 
 [ai]
 required = true
