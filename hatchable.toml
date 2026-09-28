@@ -1,0 +1,9 @@
+[auth]
+enabled = true
+providers = ["email"]
+
+[ai]
+required = true
+
+[project]
+name = "AI Loan Assistant"
