@@ -4,7 +4,7 @@ export const methods = ["POST"];
 export default async function (req, res) {
   const text = String(req.body?.message || "").trim();
   if (!text) return res.status(400).json({ error: "Message is required" });
-  const { rows: apps } = await db.query(`SELECT id, application_number, customer_name, loan_amount, status FROM applications WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+  const { rows: apps } = await db.query(`SELECT id, application_number, customer_name, loan_amount, status FROM applications WHERE id=$1 AND user_id=$2`, [req.params.id, req.member.id]);
   if (!apps.length) return res.status(404).json({ error: "Application not found" });
   const app = apps[0];
   await db.query(`INSERT INTO conversation_messages (application_id, role, content) VALUES ($1,'user',$2)`, [app.id, text]);

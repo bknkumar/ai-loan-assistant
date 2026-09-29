@@ -5,7 +5,7 @@ export const access = "member";
 export const methods = ["GET", "POST"];
 
 export default async function (req, res) {
-  const { rows: apps } = await db.query(`SELECT id FROM applications WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+  const { rows: apps } = await db.query(`SELECT id FROM applications WHERE id=$1 AND user_id=$2`, [req.params.id, req.member.id]);
   if (!apps.length) return res.status(404).json({ error: "Application not found" });
 
   if (req.method === "GET") {

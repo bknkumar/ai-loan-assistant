@@ -3,7 +3,7 @@ export const access = "member";
 export const methods = ["POST"];
 
 export default async function (req, res) {
-  const { rows: apps } = await db.query(`SELECT id, customer_name, loan_amount, status FROM applications WHERE id=$1 AND user_id=$2`, [req.params.id, req.user.id]);
+  const { rows: apps } = await db.query(`SELECT id, customer_name, loan_amount, status FROM applications WHERE id=$1 AND user_id=$2`, [req.params.id, req.member.id]);
   if (!apps.length) return res.status(404).json({ error: "Application not found" });
   const app = apps[0];
   const { rows: docs } = await db.query(`SELECT document_type FROM application_documents WHERE application_id=$1`, [app.id]);
