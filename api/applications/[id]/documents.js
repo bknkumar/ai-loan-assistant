@@ -1,5 +1,6 @@
 import { db, storage } from "hatchable";
 import { createDocumentOcrProvider } from "../../../lib/document-ocr-provider-factory.js";
+import { normalizeExtractedFields, validateExtractedFields } from "../../../lib/document-extraction.js";
 export const access = "user";
 export const methods = ["GET", "POST"];
 
@@ -8,7 +9,7 @@ export default async function (req, res) {
   if (!apps.length) return res.status(404).json({ error: "Application not found" });
 
   if (req.method === "GET") {
-    const { rows } = await db.query(`SELECT id, document_type, file_name, mime_type, file_size, status, created_at FROM application_documents WHERE application_id=$1 ORDER BY created_at DESC`, [req.params.id]);
+    const { rows } = await db.query(`SELECT id, document_type, file_name, mime_type, file_size, status, processing_code, extracted_text, extracted_fields, processed_at, created_at FROM application_documents WHERE application_id=$1 ORDER BY created_at DESC`, [req.params.id]);
     return res.json({ documents: rows });
   }
 
@@ -25,5 +26,35 @@ export default async function (req, res) {
   const bytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
   await storage.put(storageKey, bytes, mimeType);
   const { rows } = await db.query(`INSERT INTO application_documents (application_id, document_type, file_name, mime_type, file_size, storage_key, status) VALUES ($1,$2,$3,$4,$5,$6,'UPLOADED') RETURNING id, document_type, file_name, mime_type, file_size, status, created_at`, [req.params.id, documentType, fileName, mimeType, Number(fileSize), storageKey]);
-  res.status(201).json({ document: rows[0] });
+  const document = rows[0];
+
+  // Image OCR is optional and runs only when the project owner has configured an OCR provider.
+  // Upload/storage success is kept separate from extraction status so a provider outage never loses the file.
+  if (/^image\//i.test(mimeType)) {
+    const provider = createDocumentOcrProvider();
+    if (!provider) {
+      await db.query(`UPDATE application_documents SET status='FAILED', processing_code='OCR_NOT_CONFIGURED', processed_at=now() WHERE id=$1`, [document.id]);
+      document.status = 'FAILED';
+      document.processing_code = 'OCR_NOT_CONFIGURED';
+    } else {
+      const result = await provider.extract({ mimeType, image: raw });
+      if (!result.ok) {
+        await db.query(`UPDATE application_documents SET status='FAILED', processing_code=$2, processed_at=now() WHERE id=$1`, [document.id, result.code]);
+        document.status = 'FAILED';
+        document.processing_code = result.code;
+      } else {
+        const fields = normalizeExtractedFields(result.fields);
+        const validation = validateExtractedFields(fields, documentType);
+        const status = validation.valid ? 'PROCESSED' : 'REVIEW';
+        const processingCode = validation.valid ? 'OCR_OK' : 'OCR_FIELDS_INCOMPLETE';
+        await db.query(`UPDATE application_documents SET status=$2, processing_code=$3, extracted_text=$4, extracted_fields=$5::jsonb, processed_at=now() WHERE id=$1`, [document.id, status, processingCode, result.text || '', JSON.stringify(fields || {})]);
+        document.status = status;
+        document.processing_code = processingCode;
+        document.extracted_text = result.text || '';
+        document.extracted_fields = fields || {};
+      }
+    }
+  }
+
+  res.status(201).json({ document });
 }

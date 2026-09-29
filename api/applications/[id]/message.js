@@ -39,7 +39,10 @@ export default async function (req, res) {
     current.status = 'READY_FOR_ELIGIBILITY';
   }
   const { rows: history } = await db.query(`SELECT role, content FROM conversation_messages WHERE application_id=$1 ORDER BY created_at ASC`, [app.id]);
-  const context = `Authoritative application data: customer=${current?.customer_name || 'missing'}, mobile=${current?.mobile || 'missing'}, business=${current?.business_description || 'missing'}, requested loan=${current?.loan_amount || 'missing'}, status=${current?.status || 'DRAFT'}.`;
+  const { rows: documentRows } = await db.query(`SELECT document_type, status, processing_code, extracted_fields FROM application_documents WHERE application_id=$1 ORDER BY created_at ASC`, [app.id]);
+  const extracted = documentRows.filter(d => d.extracted_fields && typeof d.extracted_fields === 'object').map(d => ({ documentType: d.document_type, status: d.status, fields: d.extracted_fields }));
+  const documentContext = extracted.length ? ` Verified document extraction: ${JSON.stringify(extracted)}.` : '';
+  const context = `Authoritative application data: customer=${current?.customer_name || 'missing'}, mobile=${current?.mobile || 'missing'}, business=${current?.business_description || 'missing'}, requested loan=${current?.loan_amount || 'missing'}, status=${current?.status || 'DRAFT'}.${documentContext}`;
   const result = await ai.generateText({ model: "sonnet", purpose: "loan_application_demo", system: `You are an AI assistant for DSA agents handling secured business-loan applications. ${context} Collect missing customer name, business, mobile number and requested loan amount. Never promise approval or eligibility. Be concise and ask only for the next missing information. When all four are present, say the application is ready for eligibility assessment and ask whether to submit. If the agent confirms submission, say the demo eligibility check has passed and that required identity and address documents are now needed.`, messages: history.map(m => ({ role: m.role, content: m.content })), maxSteps: 2 });
   const answer = result.text || "I’m ready for the next application detail.";
   await db.query(`INSERT INTO conversation_messages (application_id, role, content) VALUES ($1,'assistant',$2)`, [app.id, answer]);
