@@ -1,5 +1,5 @@
 import { db } from "hatchable";
-export const access = "user";
+export const access = "member";
 export const methods = ["POST"];
 export default async function (req, res) {
   const name = String(req.body?.customerName || "").trim();

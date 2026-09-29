@@ -1,7 +1,7 @@
 import { db, storage } from "hatchable";
 import { createDocumentOcrProvider } from "../../../lib/document-ocr-provider-factory.js";
 import { normalizeExtractedFields, validateExtractedFields } from "../../../lib/document-extraction.js";
-export const access = "user";
+export const access = "member";
 export const methods = ["GET", "POST"];
 
 export default async function (req, res) {
