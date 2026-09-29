@@ -1,4 +1,5 @@
 import { db, storage } from "hatchable";
+import { createDocumentOcrProvider } from "../../../lib/document-ocr-provider-factory.js";
 export const access = "user";
 export const methods = ["GET", "POST"];
 
