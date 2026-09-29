@@ -1,7 +1,7 @@
 [auth]
 enabled = true
 providers = ["email"]
-signup = "invite"
+# Open signup for demo users. Access to applications remains isolated per end-user account.
 
 [ai]
 required = true
