@@ -5,6 +5,7 @@ providers = ["email"]
 
 [ai]
 required = true
+providers = ["anthropic"]
 
 [project]
 name = "AI Loan Assistant"
@@ -12,14 +13,3 @@ name = "AI Loan Assistant"
 [db.tables.applications]
 read = "own"
 write = "own"
-
-# OCR provider configuration is supplied through the Hatchable setup gate.
-[[secret]]
-name = "DOCUMENT_OCR_URL"
-expose = true
-[[secret]]
-name = "DOCUMENT_OCR_API_KEY"
-expose = true
-[[secret]]
-name = "DOCUMENT_OCR_TIMEOUT_MS"
-expose = true
